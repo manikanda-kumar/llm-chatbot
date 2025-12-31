@@ -1,5 +1,9 @@
 # Banking AI Agent
 
+Forked from https://github.com/frogcoder/llm-chatbot.
+
+NOTE: This is for educational purposes only, not recommended for production use.
+
 An intelligent banking assistant combining LLM capabilities with a Go REST API backend for real-time banking operations and RAG for knowledge-based queries.
 
 ## Architecture
