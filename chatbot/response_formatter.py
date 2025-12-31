@@ -132,6 +132,10 @@ class ResponseFormatter:
     def format_answer_banking_question(result: Any) -> str:
         """Format RAG answer."""
         try:
+            # Handle case where result is just the input args (model error)
+            if isinstance(result, dict) and "question" in result and "answer" not in result:
+                return "I need a specific question to help you. What would you like to know about banking?"
+
             if isinstance(result, dict) and "answer" in result:
                 answer = result["answer"]
                 

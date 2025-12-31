@@ -1,11 +1,14 @@
-.aider*
+# Project-specific
 .env
-# Ignore document folders
+bank.db
+banking-core/banking.db
+
+# Document folders
 rbc_documents/
 chroma_db/
 
-# Ignore environment files
-.env
+# Go binaries
+banking-core/bin/
 
 # Python artifacts
 __pycache__/
@@ -14,6 +17,8 @@ __pycache__/
 *.so
 .Python
 env/
+venv/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -28,8 +33,10 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
-.venv/
-venv/
+
+# Cache directories
+.pytest_cache/
+.ruff_cache/
 .claude/
 .logs/
 
@@ -38,9 +45,7 @@ venv/
 .vscode/
 *.swp
 *.swo
-__pycache__/
-*.pyc
 
-# ignore files
+# Documentation (except README)
 *.md
 !README.md
