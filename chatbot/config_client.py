@@ -4,7 +4,7 @@
 COMMANDS = {
     "exit": ["exit", "quit", "q", "bye", "goodbye"],
     "clear": ["clear", "clear history", "start over", "reset"],
-    "user": ["user", "switch user", "change user"]
+    "user": ["user", "switch user", "change user"],
 }
 
 
@@ -12,46 +12,51 @@ COMMANDS = {
 SYSTEM_INSTRUCTIONS = """
 You are an RBC Banking Agent helping user {user_id}.
 
-IMPORTANT INSTRUCTIONS:
-1. ONLY ANSWER QUESTIONS ABOUT BANKING AND RBC SERVICES. For any questions outside of banking, financial services, or RBC products, politely decline to answer and explain that you can only help with banking-related topics.
+CRITICAL: YOU MUST CALL A FUNCTION FOR EVERY BANKING REQUEST. Do not just respond with text when a function call is needed.
 
-2. ONLY USE ONE FUNCTION PER REQUEST. Choose the most appropriate function for each user request.
+INTENT → ACTION MAPPING (follow this exactly):
+- "balance" / "how much" / "what's in" → call get_account_balance
+- "accounts" / "list" / "show my" → call list_user_accounts
+- "transfer" / "send" / "move money" → call transfer_funds
+- "transactions" / "history" / "recent" / "spending" → call get_transaction_history
+- "show my cards" / "card details" / "card status" → call get_customer_cards
+- "block card" / "freeze card" / "cancel card" → call block_card (get cards first)
+- "loans" / "mortgage" / "auto loan" → call get_customer_loans
+- "loan payment" / "payment schedule" → call get_loan_schedule (get loans first)
+- General banking questions about RBC → call answer_banking_question
 
-3. For account information and operations:
-   - For checking balances: use get_account_balance with account_number="1234567890" for checking/chequing or "2345678901" for savings or "3456789012" for credit card
-   - For listing accounts: use list_user_accounts ONLY when explicitly asked to see accounts
-   - For transfers: use transfer_funds with exact account numbers and amount as a string without $ or commas
-   - For transaction history: use get_transaction_history with the exact account number
+DISAMBIGUATION (common confusions):
+- "credit card balance" → get_account_balance with account_number="3456789012" (NOT get_customer_cards)
+- "debit card balance" → get_account_balance with account_number="1234567890" (checking account)
+- "show my cards" → get_customer_cards (card details, NOT balance)
+- "block my card" → First get_customer_cards to find card_id, then block_card
+- "loan balance" → get_customer_loans (shows balance in response)
+- "loan payment schedule" → First get_customer_loans to find loan_id, then get_loan_schedule
 
-4. For general banking questions about RBC products and services, use answer_banking_question. DO NOT use this function for non-banking questions like fitness, travel, cooking, etc.
+ACCOUNT NUMBER MAPPING:
+- Checking/Chequing → "1234567890"
+- Savings → "2345678901"
+- Credit Card → "3456789012"
 
-5. NEVER use multiple functions for a single request.
+RULES:
+1. ALWAYS call a function when the user asks about their accounts, balances, transactions, cards, or loans.
+2. ONLY use one function per request.
+3. The user_id parameter is automatically filled - do not worry about it.
+4. For transfers: use exact account numbers and amount as string without $ (e.g., "50.00").
+5. REFUSE non-banking questions (fitness, travel, cooking, etc.) - explain you only help with banking.
+6. If user gives a short reply like "checking" or "savings" after you asked a question, use that to complete the previous request.
+7. Only respond conversationally (without function call) for pure greetings like "hi" or "hello" with no banking context.
+8. NEVER assume user has a product. If they ask about loans, FIRST call get_customer_loans to verify. If empty, tell them they have no loans - don't ask for loan details.
 
-6. ALWAYS use these exact account numbers (never use account names in function calls):
-   - "1234567890" for Checking/Chequing account
-   - "2345678901" for Savings account
-   - "3456789012" for Credit Card
-
-7. CRITICAL: For money transfers, ALWAYS use transfer_funds with:
-   - from_account: the exact account number (e.g., "1234567890")
-   - to_account: the exact account number (e.g., "2345678901")
-   - amount: the amount as a string without $ or commas (e.g., "50.00")
-
-8. NEVER call transfer_funds unless the user explicitly asks to transfer money.
-
-9. For transaction history, use get_transaction_history with the exact account number.
-
-10. NEVER call multiple functions for the same request.
-
-11. MAINTAIN CONVERSATION CONTEXT: If the user's message is a short response to your previous question, interpret it in context.
-    - If you asked "What account are you transferring from?" and they reply "savings", use account number "2345678901" to complete the previous request.
-    - If you can't determine what function to call, DO NOT call any function. Just respond conversationally.
-
-12. For short, ambiguous messages, treat them as greetings and DO NOT call any functions.
-
-13. The user_id parameter will be automatically filled for all functions except answer_banking_question.
-
-14. STRICTLY REFUSE TO ANSWER NON-BANKING QUESTIONS. If asked about topics like fitness, travel, cooking, technology, or any other non-banking topic, politely explain that you can only assist with banking and financial matters related to RBC.
+EXAMPLES:
+- User: "What's my balance?" → Call get_account_balance (returns all if no account specified)
+- User: "Show my accounts" → Call list_user_accounts
+- User: "checking" (after you asked which account) → Call get_account_balance with "1234567890"
+- User: "hi" → Respond with greeting (no function call)
+- User: "hi, what's my balance?" → Call get_account_balance (not just a greeting!)
+- User: "What's my credit card balance?" → Call get_account_balance with account_number="3456789012"
+- User: "Show me my cards" → Call get_customer_cards
+- User: "Block my debit card" → Call get_customer_cards first, then block_card with the card_id
 """
 
 # Tool definitions
@@ -64,115 +69,181 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "question": {
                     "type": "string",
-                    "description": "The banking-related question to answer (must be about banking, finance, or RBC services)"
+                    "description": "The banking-related question to answer (must be about banking, finance, or RBC services)",
                 }
             },
-            "required": ["question"]
-        }
+            "required": ["question"],
+        },
     },
     {
         "name": "list_user_accounts",
-        "description": "List all accounts for a given user.",
+        "description": "CALL THIS when user asks to see accounts, list accounts, show my accounts, what accounts do I have. Returns all accounts for the user.",
         "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
                     "type": "string",
-                    "description": "The ID of the user (will be automatically filled)"
+                    "description": "Auto-filled by system",
                 }
             },
-            "required": ["user_id"]
-        }
+            "required": ["user_id"],
+        },
     },
     {
         "name": "list_target_accounts",
-        "description": "List all other accounts this user can transfer to.",
+        "description": "CALL THIS when user asks 'where can I transfer to' or 'what accounts can I send money to'. Lists transfer destinations.",
         "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
                     "type": "string",
-                    "description": "The ID of the user (will be automatically filled)"
+                    "description": "The ID of the user (will be automatically filled)",
                 },
                 "from_account": {
                     "type": "string",
-                    "description": "The source account number (must be exact account number, not name)"
-                }
+                    "description": "The source account number (must be exact account number, not name)",
+                },
             },
-            "required": ["user_id", "from_account"]
-        }
+            "required": ["user_id", "from_account"],
+        },
     },
     {
         "name": "transfer_funds",
-        "description": "Transfer funds from one account to another.",
+        "description": "CALL THIS when user asks to transfer, send, move, or pay money between accounts. Requires from_account, to_account, and amount.",
         "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
                     "type": "string",
-                    "description": "The ID of the user (will be automatically filled)"
+                    "description": "The ID of the user (will be automatically filled)",
                 },
                 "from_account": {
                     "type": "string",
-                    "description": "The source account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card"
+                    "description": "The source account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card",
                 },
                 "to_account": {
                     "type": "string",
-                    "description": "The destination account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card"
+                    "description": "The destination account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card",
                 },
                 "amount": {
                     "type": "string",
-                    "description": "The amount to transfer as a string without $ or commas (e.g., '50.00')"
-                }
+                    "description": "The amount to transfer as a string without $ or commas (e.g., '50.00')",
+                },
             },
-            "required": ["user_id", "from_account", "to_account", "amount"]
-        }
+            "required": ["user_id", "from_account", "to_account", "amount"],
+        },
     },
     {
         "name": "get_account_balance",
-        "description": "Get the balance of a specific account.",
+        "description": "CALL THIS when user asks about balance, how much money, account amount, or funds available. Returns balance. If no account specified, returns ALL balances.",
         "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
                     "type": "string",
-                    "description": "The ID of the user (will be automatically filled)"
+                    "description": "Auto-filled by system",
                 },
                 "account_number": {
                     "type": "string",
-                    "description": "The account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card"
-                }
+                    "description": "Optional. Account number: 1234567890=checking, 2345678901=savings, 3456789012=credit. If omitted, returns all balances.",
+                },
             },
-            "required": ["user_id", "account_number"]
-        }
+            "required": ["user_id"],
+        },
     },
     {
         "name": "get_transaction_history",
-        "description": "Get the transaction history for a specific account.",
+        "description": "CALL THIS when user asks about transactions, recent activity, spending, purchases, deposits, or statement. Shows transaction history for an account.",
         "parameters": {
             "type": "object",
             "properties": {
                 "user_id": {
                     "type": "string",
-                    "description": "The ID of the user (will be automatically filled)"
+                    "description": "The ID of the user (will be automatically filled)",
                 },
                 "account_number": {
                     "type": "string",
-                    "description": "The account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card"
+                    "description": "The account number (must be exact account number, not name): 1234567890 for checking, 2345678901 for savings, 3456789012 for credit card",
                 },
                 "days": {
                     "type": "integer",
-                    "description": "Number of days of history to retrieve (default: 30)"
-                }
+                    "description": "Number of days of history to retrieve (default: 30)",
+                },
             },
-            "required": ["user_id", "account_number"]
-        }
-    }
+            "required": ["user_id", "account_number"],
+        },
+    },
+    {
+        "name": "get_customer_cards",
+        "description": "CALL THIS when user asks about their cards, card details, card status, card number, expiry date, or 'show my cards'. Returns card info (NOT balance). NOTE: For 'credit card balance', use get_account_balance with account 3456789012. For 'debit card balance', use get_account_balance with account 1234567890 (checking).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string",
+                    "description": "The ID of the user (will be automatically filled)",
+                },
+            },
+            "required": ["user_id"],
+        },
+    },
+    {
+        "name": "block_card",
+        "description": "CALL THIS when user wants to block, freeze, disable, or cancel a card. WORKFLOW: First call get_customer_cards to get the card_id, then call this with that card_id.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string",
+                    "description": "The ID of the user (will be automatically filled)",
+                },
+                "card_id": {
+                    "type": "string",
+                    "description": "The card ID to block",
+                },
+            },
+            "required": ["user_id", "card_id"],
+        },
+    },
+    {
+        "name": "get_customer_loans",
+        "description": "CALL THIS when user asks about loans, mortgages, auto loans, personal loans, loan balance, or 'my loans'. Returns all active loans. ALWAYS call this first before asking for loan details.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string",
+                    "description": "The ID of the user (will be automatically filled)",
+                },
+            },
+            "required": ["user_id"],
+        },
+    },
+    {
+        "name": "get_loan_schedule",
+        "description": "CALL THIS when user asks about loan payments, payment schedule, amortization, or 'when is my loan payment due'. WORKFLOW: First call get_customer_loans to get loan_id, then call this.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "type": "string",
+                    "description": "The ID of the user (will be automatically filled)",
+                },
+                "loan_id": {
+                    "type": "string",
+                    "description": "The loan ID to get schedule for",
+                },
+            },
+            "required": ["user_id", "loan_id"],
+        },
+    },
 ]
 
 # Model configuration
 MODEL_CONFIG = {
-    "model_name": "gemini-1.5-pro",
+    "model_name": "openai/gpt-oss-20b",
     "temperature": 0.1,
-    "tool_calling_config": {"mode": "AUTO"}
+    "tool_calling_config": {"mode": "AUTO"},
+    "base_url": "https://openrouter.ai/api/v1",
+    "api_key_env": "OPENROUTER_API_KEY",
 }

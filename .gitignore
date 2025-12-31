@@ -30,6 +30,8 @@ var/
 *.egg
 .venv/
 venv/
+.claude/
+.logs/
 
 # IDE files
 .idea/
@@ -38,3 +40,7 @@ venv/
 *.swo
 __pycache__/
 *.pyc
+
+# ignore files
+*.md
+!README.md

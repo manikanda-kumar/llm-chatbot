@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RBC Banking Assistant</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='customer.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="https://www.rbcroyalbank.com/dvl/v1.0/assets/images/logos/rbc-logo-shield.svg" alt="RBC" class="logo">
+        <span class="brand">RBC Assistant</span>
+      </div>
+      <button id="new-chat-btn" class="new-chat-btn">
+        <i class="fas fa-plus"></i> New Chat
+      </button>
+      <div class="sidebar-footer">
+        <div id="user-info" class="user-info hidden">
+          <i class="fas fa-user-circle"></i>
+          <span id="username-display"></span>
+        </div>
+        <button id="logout-btn" class="logout-btn hidden">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="chat-main">
+      <!-- Login Screen -->
+      <div id="login-screen" class="login-screen">
+        <div class="login-card">
+          <img src="https://www.rbcroyalbank.com/dvl/v1.0/assets/images/logos/rbc-logo-shield.svg" alt="RBC" class="login-logo">
+          <h1>Welcome to RBC Banking Assistant</h1>
+          <p>Sign in to access your personal banking assistant</p>
+          <form id="login-form">
+            <div class="input-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" placeholder="Enter your email" required>
+            </div>
+            <div class="input-group">
+              <label for="password">Password</label>
+              <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-btn">Sign In</button>
+          </form>
+          <p class="demo-note">Demo: john.smith1@email.com / password1</p>
+        </div>
+      </div>
+
+      <!-- Chat Interface -->
+      <div id="chat-screen" class="chat-screen hidden">
+        <!-- Chat Messages -->
+        <div id="messages" class="messages">
+          <div class="welcome-message">
+            <img src="https://www.rbcroyalbank.com/dvl/v1.0/assets/images/logos/rbc-logo-shield.svg" alt="RBC" class="welcome-logo">
+            <h2>How can I help you today?</h2>
+            <p>Ask me about your accounts, transactions, cards, loans, or any banking questions.</p>
+            <div class="quick-actions">
+              <button class="quick-action" data-message="What's my account balance?">
+                <i class="fas fa-wallet"></i> Check Balance
+              </button>
+              <button class="quick-action" data-message="Show my recent transactions">
+                <i class="fas fa-history"></i> Recent Transactions
+              </button>
+              <button class="quick-action" data-message="What cards do I have?">
+                <i class="fas fa-credit-card"></i> My Cards
+              </button>
+              <button class="quick-action" data-message="Do I have any loans?">
+                <i class="fas fa-file-invoice-dollar"></i> My Loans
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-area">
+          <div class="input-container">
+            <textarea id="message-input" placeholder="Message RBC Assistant..." rows="1"></textarea>
+            <button id="send-btn" class="send-btn" disabled>
+              <i class="fas fa-arrow-up"></i>
+            </button>
+          </div>
+          <p class="disclaimer">RBC Assistant may make mistakes. Verify important information.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='customer.js') }}"></script>
+</body>
+</html>

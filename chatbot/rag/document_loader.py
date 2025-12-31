@@ -1,7 +1,7 @@
 import os
 import glob
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 def load_documents(directory_path):
     """Load documents from a directory containing PDFs and text files"""

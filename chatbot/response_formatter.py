@@ -204,17 +204,89 @@ class ResponseFormatter:
             # If it's a dictionary with an answer
             if isinstance(result, dict) and 'answer' in result:
                 return result['answer']
-            
+
             # If it's a list, try to find the first item with an answer
             if isinstance(result, list):
                 for item in result:
                     if isinstance(item, dict) and 'answer' in item:
                         return item['answer']
-            
+
             # If it's a string, return it directly
             if isinstance(result, str):
                 return result
-            
+
             return None
         except:
             return None
+
+    @staticmethod
+    def format_get_customer_cards(result: Any) -> str:
+        """Format customer cards list."""
+        try:
+            if isinstance(result, list) and len(result) > 0:
+                lines = ["Here are your cards:"]
+                for card in result:
+                    status = card.get('status', 'unknown')
+                    status_icon = "✅" if status == "active" else "🔒" if status == "blocked" else "⚠️"
+                    lines.append(
+                        f"- {card.get('card_type', 'Card').title()} Card "
+                        f"({card.get('card_number', '')}) - Expires: {card.get('expiry_date', '')} "
+                        f"{status_icon} {status.title()}"
+                    )
+                return "\n".join(lines)
+            else:
+                return "You don't have any cards on file."
+        except Exception as e:
+            print(f"Error formatting cards: {e}")
+            return "I found your cards but couldn't format them properly."
+
+    @staticmethod
+    def format_block_card(result: Any) -> str:
+        """Format card block result."""
+        if isinstance(result, str):
+            return result
+        return "The card has been processed."
+
+    @staticmethod
+    def format_get_customer_loans(result: Any) -> str:
+        """Format customer loans list."""
+        try:
+            if isinstance(result, list) and len(result) > 0:
+                lines = ["Here are your loans:"]
+                for loan in result:
+                    lines.append(
+                        f"- {loan.get('loan_type', 'Loan').title()} Loan (ID: {loan.get('loan_id', '')})\n"
+                        f"  Principal: ${loan.get('principal', '0')} | "
+                        f"Balance: ${loan.get('balance', '0')} | "
+                        f"Rate: {loan.get('interest_rate', '0%')} | "
+                        f"Monthly: ${loan.get('monthly_payment', '0')}"
+                    )
+                return "\n".join(lines)
+            else:
+                return "You don't have any active loans."
+        except Exception as e:
+            print(f"Error formatting loans: {e}")
+            return "I found your loans but couldn't format them properly."
+
+    @staticmethod
+    def format_get_loan_schedule(result: Any) -> str:
+        """Format loan payment schedule."""
+        try:
+            if isinstance(result, list) and len(result) > 0:
+                lines = ["Here's your payment schedule (next 12 months):"]
+                lines.append("Month | Payment | Principal | Interest | Balance")
+                lines.append("-" * 50)
+                for payment in result[:12]:
+                    lines.append(
+                        f"  {payment.get('month', ''): >3} | "
+                        f"${payment.get('payment', 0):>8.2f} | "
+                        f"${payment.get('principal', 0):>8.2f} | "
+                        f"${payment.get('interest', 0):>7.2f} | "
+                        f"${payment.get('balance', 0):>10.2f}"
+                    )
+                return "\n".join(lines)
+            else:
+                return "I couldn't find a payment schedule for this loan."
+        except Exception as e:
+            print(f"Error formatting loan schedule: {e}")
+            return "I found the payment schedule but couldn't format it properly."
